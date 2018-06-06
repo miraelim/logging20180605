@@ -31,7 +31,7 @@ time_t starttime=0, endtime=0;
 
 
 void makeRootkey(){
-    system("openssl rand 256 >> key.txt");
+    system("openssl rand 64 >> key.txt");
 }
 
 
@@ -123,11 +123,31 @@ void log_hmac(char *string){
 }
 
 void generate_newkey(){
-    keyobj = fopen("keyobject.txt", "w");
+    char newkey[BUFF_SIZE], temp[BUFF_SIZE];
+    system("sha1sum \"key.txt\" >>\"keyobject.txt\"");
+
+    keyobj = fopen("keyobject.txt", "r");
     if(keyobj<0)
-	printf("keyobject.txt openfail\n");
+	printf("keyobject.txt fail\n");
     else
-	printf("keyobj.txt open success\n");
+	printf("keyobj.txt success\n");
+
+    fscanf(keyobj, "%s %s", newkey,temp);
+    printf("new key : %s	temp:%s\n",newkey, temp);
+
+
+    system("rm key.txt");
+    kfd = fopen("key.txt", "w");
+    if(keyobj<0)
+	printf("key2.txt fail\n");
+    else
+	printf("key2.txt success\n");
+
+    fprintf(kfd,"%s", newkey);
+
+    fclose(kfd);
+    system("./seal1.sh");
+
 }
 
 int main(){
@@ -156,6 +176,7 @@ int main(){
 	printf("hmac open success\n");
 
     makeRootkey();
+    start();
     get_filelock();
 
     while( fgets(string, 1024,fd)!= NULL){
@@ -167,10 +188,10 @@ int main(){
 	log_hmac(string);
     }
     get_fileunlock();
-    //    generate_newkey();
+    generate_newkey();
     fclose(hmac);
     fclose(temp1);
-    fclose(keyobj);
+    ////fclose(keyobj);
     endtime = clock();
     gap = (float) (endtime - starttime)/(CLOCKS_PER_SEC);
     printf("time: %f\n",gap);
