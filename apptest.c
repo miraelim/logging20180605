@@ -18,7 +18,7 @@ unsigned char digest[SHA256_DIGEST_LENGTH];
 //char rootkey[SHA256_DIGEST_LENGTH*2+1];
 char rootkey[BUFF_SIZE];
 char keyobject[BUFF_SIZE];
-FILE  *fd, *kfd, *hmac, *temp1, *temporary, *keyobj;
+FILE  *fd, *kfd, *hmac, *temp1, *temporary, *keyobj, *temp2, *temporary1;
 int fd1, fd2;
 char    temp[BUFF_SIZE];
 char	hmac_log[BUFF_SIZE];
@@ -69,7 +69,7 @@ void get_filelock(){
     else{
 	printf("open fd2 success\n");
 	read(fd2, temp, 2048);
-//	printf("logs: %s\n",temp);
+	printf("logs: %s\n",temp);
     }
 
     if (flock(fd1, LOCK_SH) == -1) {
@@ -107,9 +107,7 @@ void get_fileunlock(){
 }
 
 void log_hmac(char *string){
-    system("./hmac.sh");
-
-    system("pwd");
+    system("hmac256 \"key.txt\" \"temp1.txt\" >> temporary.txt");
     temporary = fopen("temporary.txt", "r");
     if(temporary<0)
 	printf("temporary.txt fail\n");
@@ -120,8 +118,25 @@ void log_hmac(char *string){
     printf("log hmac : %s\n",hmac_log);
     fprintf(hmac,"%s\n", hmac_log);
     fclose(temporary);
-    system("rm temporary.txt");
+//    system("rm temporary.txt");
+
 }
+
+void log_hmac1(char *string){
+         system("hmac256 \"key.txt\" \"temp2.txt\" >> temporary1.txt");
+         temporary1 = fopen("temporary1.txt", "r");
+        if(temporary1<0)
+	         printf("temporary1.txt fail\n");
+        else
+	         printf("temporary1.txt success\n");
+    
+	     fscanf(temporary1, "%s", hmac_log);
+         printf("log hmac : %s\n",hmac_log);
+         fprintf(hmac,"%s\n", hmac_log);
+         fclose(temporary1);
+//    system("rm temporary.txt");
+    
+	 }
 
 void generate_newkey(){
     char newkey[BUFF_SIZE], temp[BUFF_SIZE];
@@ -152,7 +167,7 @@ void generate_newkey(){
 }
 
 int main(){
-    char string[1024] ;
+    char string[1024],string1[1024];
 
     starttime = clock();
     fd = fopen("weatherdatapoint.txt", "r");
@@ -173,8 +188,8 @@ int main(){
     start();
     get_filelock();
 
-    while( fgets(string, 1024,fd)!= NULL){
-   // fgets(string, 1024,fd);
+//    while( fgets(string, 1024,fd)!= NULL){
+   fgets(string, 1024,fd);
 	system("./unseal.sh");
 	system("rm temp1.txt");
 	temp1 = fopen("temp1.txt", "w");
@@ -186,7 +201,18 @@ int main(){
 	printf("%s\n",string);
 	fprintf(temp1, "%s", string);
 	log_hmac(string);
-}
+//}
+	 fgets(string1, 1024,fd);
+	  temp2 = fopen("temp2.txt", "w");
+	 
+	         if(temp2<0)
+	                  printf("temp2.txt openfail\n");
+	         else
+	                  printf("temp2 open success\n");
+	         printf("%s\n",string1);
+	          fprintf(temp2, "%s", string1);
+	         log_hmac1(string1);
+
     get_fileunlock();
     generate_newkey();
     fclose(hmac);
